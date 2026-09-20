@@ -159,5 +159,81 @@ def generate_with_citation(query: str, top_k: int = TOP_K) -> dict:
     }
 
 
+QUERY_REWRITE_PROMPT = """Dựa vào lịch sử hội thoại, viết lại câu hỏi cuối cùng của
+người dùng thành một câu hỏi độc lập, đầy đủ ngữ cảnh, hiểu được mà không cần xem
+lịch sử. Chỉ trả về câu hỏi đã viết lại, không giải thích thêm."""
+
+
+def rewrite_standalone_query(query: str, history: list[dict]) -> str:
+    """Viết lại câu hỏi follow-up thành câu hỏi độc lập dựa trên lịch sử hội thoại
+    (bonus: conversation memory). Không có lịch sử thì trả nguyên câu hỏi gốc."""
+    if not history:
+        return query
+    turns = "\n".join(f"{h['role']}: {h['content']}" for h in history[-6:])
+    user_message = f"Lịch sử hội thoại:\n{turns}\n\nCâu hỏi mới: {query}"
+    try:
+        rewritten = call_llm(QUERY_REWRITE_PROMPT, user_message)
+        return rewritten.strip() or query
+    except Exception as error:
+        print(f"Query rewrite failed: {error}")
+        return query
+
+
+def generate_with_history(
+    query: str,
+    history: list[dict] | None = None,
+    top_k: int = TOP_K,
+    use_reranking: bool = True,
+) -> dict:
+    """Như generate_with_mode, nhưng dùng lịch sử hội thoại để viết lại câu hỏi
+    follow-up thành câu hỏi độc lập trước khi retrieve, và đưa lịch sử gần đây
+    vào prompt sinh câu trả lời (bonus: conversation memory)."""
+    history = history or []
+    standalone_query = rewrite_standalone_query(query, history)
+
+    chunks = retrieve(standalone_query, top_k=top_k, use_reranking=use_reranking)
+    if not chunks:
+        return {
+            "answer": SAFE_REFUSAL,
+            "sources": [],
+            "retrieval_source": "none",
+            "standalone_query": standalone_query,
+        }
+
+    reordered = reorder_for_llm(chunks)
+    context = format_context(reordered)
+    history_text = "\n".join(f"{h['role']}: {h['content']}" for h in history[-4:])
+    user_message = (
+        (f"Lịch sử hội thoại gần đây:\n{history_text}\n\n" if history_text else "")
+        + f"Context:\n{context}\n\nQuestion: {query}"
+    )
+
+    try:
+        answer = call_llm(SYSTEM_PROMPT, user_message)
+    except Exception as error:
+        print(f"LLM call failed: {error}")
+        return {
+            "answer": SAFE_REFUSAL,
+            "sources": [],
+            "retrieval_source": "none",
+            "standalone_query": standalone_query,
+        }
+
+    if not answer or not answer.strip():
+        return {
+            "answer": SAFE_REFUSAL,
+            "sources": [],
+            "retrieval_source": "none",
+            "standalone_query": standalone_query,
+        }
+
+    return {
+        "answer": answer,
+        "sources": chunks,
+        "retrieval_source": chunks[0]["retrieval_method"],
+        "standalone_query": standalone_query,
+    }
+
+
 if __name__ == "__main__":
     print(generate_with_citation("test query"))
