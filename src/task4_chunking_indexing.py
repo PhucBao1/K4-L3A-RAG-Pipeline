@@ -27,8 +27,10 @@ CHUNK_SIZE = 500
 CHUNK_OVERLAP = 50
 CHUNKING_METHOD = "recursive"
 
+# Model mặc định khi EMBEDDING_PROVIDER=sentence_transformers. Khi dùng openai/gemini,
+# model thật được đọc từ biến môi trường EMBEDDING_MODEL trong .env (xem embed_texts()).
 EMBEDDING_MODEL = "BAAI/bge-m3"
-EMBEDDING_DIM = 1024
+EMBEDDING_DIM = 1536  # text-embedding-3-small (EMBEDDING_PROVIDER=openai hiện tại trong .env)
 
 COLLECTION_NAME = "rag_documents"
 
