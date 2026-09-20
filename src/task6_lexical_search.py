@@ -23,6 +23,11 @@ def build_bm25_index(corpus: list[dict]):
 
 def lexical_search(query: str, top_k: int = 10) -> list[dict]:
     """Trả về BM25 SearchResult theo score giảm dần."""
+    global CORPUS
+    if not CORPUS:
+        from .task4_chunking_indexing import chunk_documents, load_documents
+
+        CORPUS = chunk_documents(load_documents())
     if not CORPUS:
         return []
 
