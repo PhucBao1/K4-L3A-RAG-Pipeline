@@ -2,9 +2,9 @@
 
 ## Thông tin
 
-- Họ và tên: Dũng
+- Họ và tên: Nguyễn Việt Dũng
 - Mã học viên: 2A202602533
-- Nhóm: Track B — Hybrid Retrieval & Fallback Pipeline
+- Nhóm: ScoutX - Track B — Hybrid Retrieval & Fallback Pipeline
 - Repository/branch: `PhucBao1/K4-L3A-RAG-Pipeline` / branch `dung-02533`
 
 ## Phần việc đã thực hiện
@@ -35,8 +35,14 @@
     * Query in-domain: *"Thủ tục đăng ký hộ kinh doanh"* $\rightarrow$ Dense Cosine Score đạt **0.7578** (Top 1: `nghi-dinh-168-2025-nd-cp-dang-ky-ho-kinh-doanh.md`).
     * Query out-of-domain: *"Cách nấu phở bò Hà Nội truyền thống"* $\rightarrow$ Dense Cosine Score giảm mạnh còn **0.3413**.
     * Kết luận: Hiệu chỉnh và thiết lập ngưỡng `SCORE_THRESHOLD = 0.45` trong `.env` giúp phân tách rạch ròi và kích hoạt Fallback chuẩn xác.
-- Kết quả trước/sau nếu có: Ban đầu `test_lexical_search_returns_bm25_contract` bị lỗi `IndexError` do IDF = 0 trên 2 docs test. Sau khi tối ưu hóa floor IDF, 100% test Track B đạt **PASSED**.
-- Lỗi đã phát hiện và cách xử lý: Lỗi `ModuleNotFoundError` khi load dotenv sớm (đã wrap try-except), lỗi log(1)=0 của BM25Okapi trên tập test nhỏ (đã xử lý IDF floor), và lỗi nghẽn mạng khi tải model 2.2GB local (chuyển sang OpenAI text-embedding-3-small).
+- Kết quả trước/sau nếu có: 
+  + Ban đầu `test_lexical_search_returns_bm25_contract` bị lỗi `IndexError` do IDF = 0 trên 2 docs test. Sau khi tối ưu hóa floor IDF, 100% test Track B đạt **PASSED** (8/8 contract tests).
+  + Đóng góp vào kết quả đánh giá end-to-end của nhóm (theo `RESULT.md`): Pipeline Hybrid + RRF giúp tăng điểm trung bình toàn hệ thống từ **0.729 lên 0.761** so với Dense-only, đặc biệt Context Recall tăng vọt từ **0.633 lên 0.767** (+13.3%), chứng minh giá trị của thuật toán RRF trong việc dung hợp từ khóa định danh văn bản pháp luật.
+- Lỗi đã phát hiện và cách xử lý: 
+  + Lỗi toán học $\ln(1)=0$ của BM25Okapi trên tập test nhỏ: xử lý bằng IDF positive floor.
+  + Lỗi `ModuleNotFoundError` khi load dotenv sớm (wrap try-except an toàn).
+  + Lỗi nghẽn mạng khi tải model 2.2GB local (chuyển sang OpenAI `text-embedding-3-small`).
+  + Phối hợp Peer-Review với đồng đội (Phúc Bảo qua PR #3 `fix/task6-task8-runtime-bugs`): phát hiện và xử lý 2 lỗi runtime khi tích hợp thực tế gồm biến `CORPUS` BM25 cần tự động load ngoài test context và bổ sung `import json` còn thiếu ở Task 8 fallback.
 
 ## Điều còn hạn chế
 
@@ -48,4 +54,4 @@
 Tôi xác nhận nội dung trên phản ánh đúng phần việc của mình và có thể giải thích hoặc chạy lại trong buổi demo.
 
 - Ngày: 20-09-2026
-- Tên thành viên: Dũng
+- Tên thành viên: Nguyễn Việt Dũng
