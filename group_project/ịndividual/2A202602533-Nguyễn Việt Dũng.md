@@ -29,13 +29,18 @@
 
 ## Kiểm thử và kết quả
 
-- Test hoặc query tôi đã dùng: `pytest tests/test_contracts.py -v` (toàn bộ 8/8 test liên quan đến Track B bao gồm: `test_public_function_signatures_are_stable`, `test_search_result_validator_checks_order_method_and_uniqueness`, `test_semantic_search_uses_shared_embedding_and_contract`, `test_lexical_search_returns_bm25_contract`, `test_rrf_uses_rank_deduplicates_and_marks_hybrid`, `test_retrieve_uses_dense_score_for_fallback`, `test_retrieve_fuses_once_when_dense_is_confident`, `test_retrieve_survives_fallback_provider_error`).
+- Test hoặc query tôi đã dùng: 
+  + Unit & Contract tests: `pytest tests/test_contracts.py -v` (toàn bộ 8/8 test liên quan đến Track B đạt **PASSED** 100%).
+  + Empirical query calibration trên toàn bộ 1,716 chunks thực tế:
+    * Query in-domain: *"Thủ tục đăng ký hộ kinh doanh"* $\rightarrow$ Dense Cosine Score đạt **0.7578** (Top 1: `nghi-dinh-168-2025-nd-cp-dang-ky-ho-kinh-doanh.md`).
+    * Query out-of-domain: *"Cách nấu phở bò Hà Nội truyền thống"* $\rightarrow$ Dense Cosine Score giảm mạnh còn **0.3413**.
+    * Kết luận: Hiệu chỉnh và thiết lập ngưỡng `SCORE_THRESHOLD = 0.45` trong `.env` giúp phân tách rạch ròi và kích hoạt Fallback chuẩn xác.
 - Kết quả trước/sau nếu có: Ban đầu `test_lexical_search_returns_bm25_contract` bị lỗi `IndexError` do IDF = 0 trên 2 docs test. Sau khi tối ưu hóa floor IDF, 100% test Track B đạt **PASSED**.
-- Lỗi đã phát hiện và cách xử lý: Lỗi `ModuleNotFoundError` khi load dotenv sớm (đã wrap try-except) và lỗi log(1)=0 của BM25Okapi trên tập test nhỏ (đã xử lý IDF floor).
+- Lỗi đã phát hiện và cách xử lý: Lỗi `ModuleNotFoundError` khi load dotenv sớm (đã wrap try-except), lỗi log(1)=0 của BM25Okapi trên tập test nhỏ (đã xử lý IDF floor), và lỗi nghẽn mạng khi tải model 2.2GB local (chuyển sang OpenAI text-embedding-3-small).
 
 ## Điều còn hạn chế
 
-- Một hạn chế cụ thể của phần tôi làm: Ngưỡng `SCORE_THRESHOLD = 0.3` hiện tại là giá trị mặc định, cần được tinh chỉnh (calibration) thực nghiệm trên dữ liệu in-domain và out-of-domain thật sau khi Track A hoàn thành nạp tài liệu.
+- Một hạn chế cụ thể của phần tôi làm: Hiện tại pipeline mới chỉ fallback sang PageIndex hoặc trả kết quả hybrid an toàn; nếu mạng offline hoàn toàn khi có query ngoài domain thì cơ chế phụ thuộc vào safe refusal của generator.
 - Nếu có thêm thời gian, thay đổi đầu tiên tôi sẽ thực hiện: Thử nghiệm thêm Cross-Encoder reranker (như BGE-Reranker-Large hoặc Cohere Rerank) để so sánh hiệu năng ranking với thuật toán RRF.
 
 ## Xác nhận đóng góp
